@@ -16,5 +16,6 @@ executable sokal
                        hxt-http,
                        HandsomeSoup,
                        HTTP,
-                       containers
+                       containers,
+                       array
   default-language:    Haskell2010
