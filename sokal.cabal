@@ -17,5 +17,8 @@ executable sokal
                        HandsomeSoup,
                        HTTP,
                        containers,
-                       array
+                       array,
+                       random,
+                       transformers,
+                       mtl
   default-language:    Haskell2010

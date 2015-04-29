@@ -6,14 +6,10 @@ import Text.XML.HXT.HTTP
 import Data.Map (Map, (!))
 import qualified Data.Map as Map hiding (foldr)
 import Text.HandsomeSoup (css)
-import Data.List (group, sort)
+import Data.List (group, sort, intersperse)
 
 type PrimitiveModel = Map (String, String) [String]
-newtype ProcessedModel = ProcessedModel [(String, [(Int, Int)])]
-
-instance Show ProcessedModel where
-    show (ProcessedModel states) = concatMap (\(str, xs) 
-        -> str ++ concatMap show xs ++ "\n") states
+type ProcessedModel = [(String, [(Int, Int)])]
 
 hxtConfig :: [SysConfig]
 hxtConfig = 
@@ -36,7 +32,7 @@ primitiveModel model (x1:x2:x3:xs) = primitiveModel newModel (x2:x3:xs) where
 -- Need to create a map from (String, String) states to Int ids.
 -- Alternatively - what happens to states that are not keys in the dictionary?
 processModel :: PrimitiveModel -> ProcessedModel
-processModel prim = ProcessedModel $ map processState (Map.toList prim) where
+processModel prim = map processState (Map.toList prim) where
     processState :: ((String, String), [String]) -> (String, [(Int, Int)]) 
     processState ((_, x), xs) = (x, zip (map length . group . sort $ xs) [1..])
 
@@ -47,5 +43,6 @@ suck = do
     let modelPrim = foldr (Map.unionWith (++)) Map.empty (map (primitiveModel Map.empty) results)
 
     writeFile "sokal.model"
-        $ show . processModel 
+        $ concat . intersperse "\n"
+        $ map show . processModel 
         $ modelPrim
