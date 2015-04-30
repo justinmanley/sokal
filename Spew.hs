@@ -27,8 +27,9 @@ frequency xs =
         rand <- state $ randomR (0, sum frequencies - 1)
         return $ ids !! rand
 
-genText :: Id -> FastModel -> WriterT String Rand Int 
-genText start model = iter start where
+genText :: FastModel -> WriterT String Rand Int 
+genText model = iter =<< start where
+    start = (fst . randomR (bounds model)) <$> lift get 
     iter state = do
         let (word, successors) = model ! state
         tell word -- emit a word
@@ -41,8 +42,8 @@ spew :: IO ()
 spew = do
     model <- parseModel <$> readFile "sokal.model"
     gen <- getStdGen
-    let start = fst $ randomR (bounds model) gen 
 
-    putStrLn "hello"
     writeFile "sokal.output" 
-        $ (flip evalState $ gen) . execWriterT . genText start $ model  
+        $ (flip evalState $ gen) . execWriterT . genText
+        $ model  
+
