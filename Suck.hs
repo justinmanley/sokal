@@ -7,9 +7,14 @@ import Data.Map (Map, (!))
 import qualified Data.Map as Map hiding (foldr)
 import Text.HandsomeSoup (css)
 import Data.List (group, sort, intersperse)
+import Data.Maybe
+
+type Id = Int
+
+type Frequency = Int
 
 type PrimitiveModel = Map (String, String) [String]
-type ProcessedModel = [(String, [(Int, Int)])]
+type ProcessedModel = [(String, [(Frequency, Id)])]
 
 hxtConfig :: [SysConfig]
 hxtConfig = 
@@ -29,12 +34,19 @@ primitiveModel model [x,y] = model
 primitiveModel model (x1:x2:x3:xs) = primitiveModel newModel (x2:x3:xs) where
     newModel = Map.insertWith (++) (x1, x2) [x3] model    
 
--- Need to create a map from (String, String) states to Int ids.
--- Alternatively - what happens to states that are not keys in the dictionary?
-processModel :: PrimitiveModel -> ProcessedModel
+processModel :: PrimitiveModel -> ProcessedModel 
 processModel prim = map processState (Map.toList prim) where
-    processState :: ((String, String), [String]) -> (String, [(Int, Int)]) 
-    processState ((_, x), xs) = (x, zip (map length . group . sort $ xs) [1..])
+    processState :: ((String, String), [String]) -> (String, [(Frequency, Id)])
+    processState ((s1, s2), xs) = 
+        ( s2
+        , map swap . Map.toList . (Map.mapKeys $ stamp s2) 
+            $ foldr frequency Map.empty xs )
+
+    stamp current str = fromMaybe mx $ Map.lookup (current, str) ids
+
+    frequency s freqs = Map.insertWith' (+) s 1 freqs 
+    ids = Map.fromList $ zip (Map.keys prim) [1..]
+    mx = length $ Map.keys prim
 
 suck :: IO ()
 suck = do
@@ -46,3 +58,4 @@ suck = do
         $ concat . intersperse "\n"
         $ map show . processModel 
         $ modelPrim
+
