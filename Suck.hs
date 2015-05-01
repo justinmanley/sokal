@@ -42,11 +42,12 @@ processModel prim = map processState (Map.toList prim) where
         , map swap . Map.toList . (Map.mapKeys $ stamp s2) 
             $ foldr frequency Map.empty xs )
 
-    stamp current str = fromMaybe mx $ Map.lookup (current, str) ids
+    -- All terminal states are mapped to the same integer id
+    stamp current str = fromMaybe terminalId $ Map.lookup (current, str) ids
 
     frequency s freqs = Map.insertWith' (+) s 1 freqs 
     ids = Map.fromList $ zip (Map.keys prim) [1..]
-    mx = length $ Map.keys prim
+    terminalId = length $ Map.keys prim
 
 suck :: IO ()
 suck = do

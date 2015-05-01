@@ -1,3 +1,5 @@
+{-# LANGUAGE ViewPatterns #-}
+
 module Spew where
 
 import Data.Array
@@ -16,9 +18,11 @@ parseModel str = array size $ zipWith parseState [1..] states where
     size = (1, length states)
     parseState i str = (i, read str)
 
+-- Pick a value at random from a list
 select :: [a] -> Rand a
 select xs = fmap (xs !!) . state . randomR $ (0, length xs - 1)
 
+-- Pick a value from a list of (frequency, value) pairs
 frequency :: [(Int, b)] -> Rand b
 frequency xs = 
     let frequencies = fst . unzip $ xs
@@ -27,16 +31,24 @@ frequency xs =
         rand <- state $ randomR (0, sum frequencies - 1)
         return $ ids !! rand
 
-genText :: FastModel -> WriterT String Rand Int 
-genText model = iter =<< start where
+-- Can we reasonably end on this token?
+isTerminal :: String -> Bool
+isTerminal s = case s of
+    "." -> True
+    _   -> False
+
+genText :: Int -> FastModel -> WriterT String Rand () 
+genText len model = iter len =<< start where
     start = (fst . randomR (bounds model)) <$> lift get 
-    iter state = do
-        let (word, successors) = model ! state
-        tell word -- emit a word
-    
-        case successors of
-            [] -> iter =<< lift (select $ indices model)
-            _  -> iter =<< lift (frequency successors)
+    iter len ((!) model -> (word, successors))  
+        | len < 0 && isTerminal word = tell word 
+        | otherwise = do
+            tell word -- emit a word
+            tell " "
+        
+            case successors of
+                [] -> iter (len - 1)  =<< lift (select $ indices model)
+                _  -> iter (len - 1) =<< lift (frequency successors)
 
 spew :: IO ()
 spew = do
@@ -44,6 +56,7 @@ spew = do
     gen <- getStdGen
 
     writeFile "sokal.output" 
-        $ (flip evalState $ gen) . execWriterT . genText
-        $ model  
+        $ (flip evalState $ gen) . execWriterT . genText 1000
+        $ model 
+  
 
