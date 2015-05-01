@@ -7,6 +7,10 @@ import System.Random
 import Control.Monad.Trans.State.Lazy
 import Control.Monad.Writer.Lazy
 import Control.Applicative ((<$>))
+import Data.Char (isUpper)
+
+import Debug.Trace (trace)
+debug x = trace (show x) x
 
 type Id = Int
 type Rand = State StdGen
@@ -39,7 +43,18 @@ isTerminal s = case s of
 
 genText :: Int -> FastModel -> WriterT String Rand () 
 genText len model = iter len =<< start where
-    start = (fst . randomR (bounds model)) <$> lift get 
+    start = do
+        gen <- lift get
+        let (rnd, gen') = randomR (bounds model) $ gen  
+        
+        lift $ put gen'
+
+        if case debug (fst $ model ! rnd) of
+            (x:xs) -> isUpper x
+            [] -> False
+        then return rnd 
+        else start
+
     iter len ((!) model -> (word, successors))  
         | len < 0 && isTerminal word = tell word 
         | otherwise = do
@@ -47,7 +62,7 @@ genText len model = iter len =<< start where
             tell " "
         
             case successors of
-                [] -> iter (len - 1)  =<< lift (select $ indices model)
+                [] -> iter (len - 1) =<< lift (select $ indices model)
                 _  -> iter (len - 1) =<< lift (frequency successors)
 
 spew :: IO ()
