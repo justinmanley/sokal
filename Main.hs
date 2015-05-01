@@ -4,4 +4,4 @@ import Suck
 import Spew
 
 main :: IO ()
-main = suck
+main = suck >> spew

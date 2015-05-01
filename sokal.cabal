@@ -11,6 +11,7 @@ cabal-version:       >=1.10
 
 executable sokal
   main-is:             Main.hs
+  hs-source-dirs:      .
   build-depends:       base >=4.6 && <4.7,
                        hxt,
                        hxt-http,
